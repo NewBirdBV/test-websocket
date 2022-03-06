@@ -1,0 +1,117 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<div>test websocket</div>
+
+<input id="text"/>
+<button id="send">发送</button>
+
+<ul id="logger">
+
+</ul>
+
+<script>
+
+    let token = null;
+    let ws = null;
+
+    let lockGenConnect = false;
+
+
+    function heartBeat(ws, token) {
+        let pingId, pongId = null;
+        const timeout = 5000;
+
+
+        pingId = setTimeout(() => {
+            ws.send(stringify({
+                msg: 'ping',
+                token
+            }));
+
+            pongId = setTimeout(() => {
+                ws.close();
+            }, timeout)
+
+        }, timeout);
+
+        return function clear () {
+            clearTimeout(pingId);
+            clearTimeout(pongId);
+        };
+    }
+
+    function generateConnect() {
+        const _ws = new WebSocket(`ws://${location.host}`);
+
+        let clear = null;
+
+        _ws.onmessage = function (e) {
+            const { msg, token: remoteToken }  = JSON.parse(e.data);
+
+            if (remoteToken) {
+                token = remoteToken;
+                clear = heartBeat(_ws, remoteToken);
+            } else {
+                clear && clear();
+                clear = heartBeat(_ws, token);
+            }
+            msg && insertLog(msg);
+        }
+
+        _ws.onclose = function (e) {
+            console.log(e);
+            clear && clear();
+            clear = null;
+            //debugger;
+            ws = reConnect(false) || ws;
+            token = null;
+        };
+        return _ws;
+    }
+
+    ws = generateConnect();
+
+
+    function reConnect(first) {
+
+        if (lockGenConnect) {
+            return;
+        }
+        insertLog(`${first ? '建立' : '重新'}连接...`);
+        lockGenConnect = setTimeout(() => {
+            lockGenConnect = null;
+        }, 5000);
+
+        return generateConnect();
+    }
+
+    document.getElementById('send').onclick = function () {
+        const msg = document.getElementById('text').value;
+        if (ws && token) {
+            ws.send(stringify({
+                token,
+                msg
+            }));
+        } else {
+            console.log(ws, token);
+            console.log("Please connect server and get auth");
+        }
+    }
+
+    function stringify(payload) {
+        return JSON.stringify(payload);
+    }
+
+    function insertLog(text) {
+        const li = document.createElement('li');
+        const logger = document.getElementById('logger');
+        li.textContent = text;
+        logger.insertBefore(li, logger.firstChild || null);
+    }
+</script>
+</body>
+</html>
+

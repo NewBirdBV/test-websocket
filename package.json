@@ -1,0 +1,16 @@
+{
+  "name": "test-websocket",
+  "version": "1.0.0",
+  "description": "",
+  "main": "1.js",
+  "scripts": {
+    "debug": "node --inspect-brk 1.mjs",
+    "start": "node 1.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "ws": "^8.5.0"
+  }
+}
